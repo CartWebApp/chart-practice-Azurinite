@@ -150,22 +150,12 @@ function scatterTripsVsTemp(genre) {
 }
 
 // DOUGHNUT — region share for one year
-const totalShare = rows.reduce((accumulatorMap, currentRow) => {
-  const region = currentRow.region;
-
-  if (accumulatorMap.has(region)) {
-    const currentTotal = accumulatorMap.get(genre);
-    accumulatorMap.set(genre, currentTotal + 1);
-  } else {
-    accumulatorMap.set(genre, 1);
-  }
-}, new Map());
-
-
 function doughnutRegionVsShare(year, region) {
   const rowsOnYear = chartData.find(r => r.year === year)
+  console.log(rowsOnYear)
 
-
+  const totalRegion = chartData.filter(r => r.region).length
+  console.log(totalRegion)
   const row = chartData.find(r => r.year === year && r.region === region);
 
   const percent = Math.round(row.reviewScore);
