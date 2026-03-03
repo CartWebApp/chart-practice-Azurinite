@@ -58,7 +58,6 @@ function buildConfig(type, { year, region, metric }) {
 // Task A: BAR — compare sales by platform per genre
 function barByGenre(year, metric) {
   const rows = chartData.filter(r => r.year === year);
-  console.log(rows);
 
   // Group genres
   const organizedByGenre = new Map()
@@ -74,13 +73,10 @@ function barByGenre(year, metric) {
     }
   }
 
-  console.log(organizedByGenre);
-
   // Get the genre names, get the metric values
   // **Conver to array otherwise chart.js errors
   const labels = Array.from(organizedByGenre.keys());
   const values = Array.from(organizedByGenre.values());
-  console.log(labels, values);
 
   return {
     type: "bar",
@@ -105,10 +101,8 @@ function barByGenre(year, metric) {
 }
 
 // Task B: LINE — Sales over years
-function lineOverTime(year, metric) {
-  const rows = chartData.filter(r => r.year === year);
-
-  const labels = rows.map(r => r.year);
+function lineOverTime(region, metric) {
+  const rows = chartData.filter(r => r.region === region);
 
   // Group genres
   const organizedByGenre = new Map()
@@ -117,28 +111,32 @@ function lineOverTime(year, metric) {
     const value = row[metric];
 
     if (organizedByGenre.has(year)) {
-      const currentTotal = organizedByGenre.get(genre);
-      organizedByGenre.set(genre, currentTotal + value);
+      const currentTotal = organizedByGenre.get(year);
+      organizedByGenre.set(year, currentTotal + value);
     } else {
-      organizedByGenre.set(genre, value);
+      organizedByGenre.set(year, value);
     }
   }
 
-  const datasets = {
-    label: "T",
-    data: organizedByGenre.map(r => r[metric]) // Grabs the value of the metric
-  };
+  const labels = Array.from(organizedByGenre.keys());
+  const values = Array.from(organizedByGenre.values());
 
   return {
     type: "line",
-    data: { labels, datasets },
+    data: {
+      labels, 
+      datasets: [{
+        label: `${metric} in ${region}`,
+        data: values
+      }] 
+    },
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: `Trends over time: ${year}` }
+        title: { display: true, text: `Trends over time: ${region}` }
       },
       scales: {
-        y: { title: { display: true, text: "Value" } },
+        y: { title: { display: true, text: "Sales" } },
         x: { title: { display: true, text: "year" } }
       }
     }
