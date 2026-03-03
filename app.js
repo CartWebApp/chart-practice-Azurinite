@@ -44,9 +44,11 @@ renderBtn.addEventListener("click", () => {
 });
 
 // --- Students: you’ll edit / extend these functions ---
+
+
 function buildConfig(type, { year, region, metric }) {
   if (type === "bar") return barByGenre(year, metric);
-  if (type === "line") return lineOverTime(year, ["trips", "revenueUSD"]);
+  if (type === "line") return lineOverTime(region, "unitsM");
   if (type === "scatter") return scatterTripsVsTemp(year);
   if (type === "doughnut") return doughnutRegionVsShare(year, region);
   if (type === "radar") return radarCompareNeighborgenres(year);
@@ -56,23 +58,29 @@ function buildConfig(type, { year, region, metric }) {
 // Task A: BAR — compare sales by platform per genre
 function barByGenre(year, metric) {
   const rows = chartData.filter(r => r.year === year);
-  console.log(rows)
+  console.log(rows);
 
-  const aggregatedLabels = rows.reduce((accumulatorMap, currentRow) => {
-    const genre = currentRow.genre;
-    const value = currentRow[metric];
+  // Group genres
+  const organizedByGenre = new Map()
+  for (const row of rows) {
+    const genre = row.genre;
+    const value = row[metric];
 
-    if (accumulatorMap.has(genre)) {
-      const currentTotal = accumulatorMap.get(genre);
-      accumulatorMap.set(genre, currentTotal + value);
+    if (organizedByGenre.has(genre)) {
+      const currentTotal = organizedByGenre.get(genre);
+      organizedByGenre.set(genre, currentTotal + value);
     } else {
-      accumulatorMap.set(genre, value);
+      organizedByGenre.set(genre, value);
     }
+  }
 
-  }, new Map());
+  console.log(organizedByGenre);
 
-  const labels = aggregatedLabels.keys();
-  const values = aggregatedLabels.values();
+  // Get the genre names, get the metric values
+  // **Conver to array otherwise chart.js errors
+  const labels = Array.from(organizedByGenre.keys());
+  const values = Array.from(organizedByGenre.values());
+  console.log(labels, values);
 
   return {
     type: "bar",
@@ -96,16 +104,30 @@ function barByGenre(year, metric) {
   };
 }
 
-// Task B: LINE — trend over time for one neighborgenre (2 datasets)
-function lineOverTime(genre, metrics) {
-  const rows = chartData.filter(r => r.genre === genre);
+// Task B: LINE — Sales over years
+function lineOverTime(year, metric) {
+  const rows = chartData.filter(r => r.year === year);
 
-  const labels = rows.map(r => r.genre);
+  const labels = rows.map(r => r.year);
 
-  const datasets = metrics.map(m => ({
-    label: m,
-    data: rows.map(r => r[m])
-  }));
+  // Group genres
+  const organizedByGenre = new Map()
+  for (const row of rows) {
+    const year = row.year;
+    const value = row[metric];
+
+    if (organizedByGenre.has(year)) {
+      const currentTotal = organizedByGenre.get(genre);
+      organizedByGenre.set(genre, currentTotal + value);
+    } else {
+      organizedByGenre.set(genre, value);
+    }
+  }
+
+  const datasets = {
+    label: "T",
+    data: organizedByGenre.map(r => r[metric]) // Grabs the value of the metric
+  };
 
   return {
     type: "line",
@@ -113,7 +135,7 @@ function lineOverTime(genre, metrics) {
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: `Trends over time: ${genre}` }
+        title: { display: true, text: `Trends over time: ${year}` }
       },
       scales: {
         y: { title: { display: true, text: "Value" } },
@@ -123,27 +145,28 @@ function lineOverTime(genre, metrics) {
   };
 }
 
-// SCATTER — relationship between temperature and trips
-function scatterTripsVsTemp(genre) {
-  const rows = chartData.filter(r => r.genre === genre);
+// SCATTER — relationship between review score and sales
+function scatterTripsVsTemp(year) {
+  const rows = chartData.filter(r => r.year === year);
 
-  const points = rows.map(r => ({ x: r.tempC, y: r.trips }));
+  const points = rows.map(r => ({ x: r.reviewScore, y: r.unitsM }))
+  console.log(points);
 
   return {
     type: "scatter",
     data: {
       datasets: [{
-        label: `Trips vs Temp (${genre})`,
+        label: `Review Score vs Sales (${year})`,
         data: points
       }]
     },
     options: {
       plugins: {
-        title: { display: true, text: `Does temperature affect trips? (${genre})` }
+        title: { display: true, text: `Does review score affect sales? (${year})` }
       },
       scales: {
-        x: { title: { display: true, text: "Temperature (C)" } },
-        y: { title: { display: true, text: "Trips" } }
+        x: { title: { display: true, text: "Review Score" } },
+        y: { title: { display: true, text: "Sales (M)" } }
       }
     }
   };
@@ -151,20 +174,18 @@ function scatterTripsVsTemp(genre) {
 
 // DOUGHNUT — region share for one year
 function doughnutRegionVsShare(year, region) {
-  const rowsOnYear = chartData.find(r => r.year === year)
+  const rowsOnYear = chartData.filter(r => r.year === year)
   console.log(rowsOnYear)
 
-  const totalRegion = chartData.filter(r => r.region).length
-  console.log(totalRegion)
-  const row = chartData.find(r => r.year === year && r.region === region);
+  const totalRegion = (rowsOnYear.filter(r => r.region).length)
+  const percent = ((rowsOnYear.filter(r => r.region === region).length)/totalRegion) * 100
 
-  const percent = Math.round(row.reviewScore);
   const share = 100 - percent;
 
   return {
     type: "doughnut",
     data: {
-      labels: ["Members (%)", "Casual (%)"],
+      labels: ["Region (%)", "Total (%)"],
       datasets: [{ label: "Region Share", data: [percent, share] }]
     },
     options: {
@@ -175,15 +196,17 @@ function doughnutRegionVsShare(year, region) {
   };
 }
 
-// RADAR — compare neighborgenres across multiple metrics for one year
+// RADAR — compare publishers across multiple metrics for one year
 function radarCompareNeighborgenres(year) {
   const rows = chartData.filter(r => r.year === year);
 
-  const metrics = ["trips", "revenueUSD", "avgDurationMin", "incidents"];
+  const metrics = ["unitsM", "revenueUSD", "priceUSD", "reviewScore", "esports"];
   const labels = metrics;
 
-  const datasets = rows.map(r => ({
-    label: r.genre,
+  const groupedPublishers = groupStatistics(rows,"publisher",metrics)
+
+  const datasets = groupedPublishers.map(r => ({
+    label: r.publisher,
     data: metrics.map(m => r[m])
   }));
 
