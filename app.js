@@ -4,7 +4,6 @@ import { gameSales as chartData } from "./data/gameSales.js";
 // --- DOM helpers ---
 const yearSelect = document.getElementById("yearSelect");
 const regionSelect = document.getElementById("regionSelect");
-const metricSelect = document.getElementById("metricSelect");
 const chartTypeSelect = document.getElementById("chartType");
 const renderBtn = document.getElementById("renderBtn");
 const dataPreview = document.getElementById("dataPreview");
@@ -32,13 +31,12 @@ renderBtn.addEventListener("click", () => {
   // Convert to number because it's read as a string from dropdown apparently
   const year = Number(yearSelect.value);
   const region = regionSelect.value;
-  const metric = metricSelect.value;
 
   // Destroy old chart if it exists (common Chart.js gotcha)
   if (currentChart) currentChart.destroy();
 
   // Build chart config based on type
-  const config = buildConfig(chartType, { year, region, metric });
+  const config = buildConfig(chartType, { year, region });
 
   currentChart = new Chart(canvas, config);
 });
@@ -46,35 +44,35 @@ renderBtn.addEventListener("click", () => {
 // --- Students: you’ll edit / extend these functions ---
 
 
-function buildConfig(type, { year, region, metric }) {
-  if (type === "bar") return barByGenre(year, metric);
-  if (type === "line") return lineOverTime(region, "unitsM");
-  if (type === "scatter") return scatterTripsVsTemp(year);
+function buildConfig(type, { year, region }) {
+  if (type === "bar") return barByGenre(year);
+  if (type === "line") return lineOverTime(region);
+  if (type === "scatter") return scatterReviewScoresVsSales(year);
   if (type === "doughnut") return doughnutRegionVsShare(year, region);
-  if (type === "radar") return radarCompareNeighborgenres(year);
-  return barByGenre(year, metric);
+  if (type === "radar") return radarComparePublishers(year);
+  return barByGenre(year);
 }
 
-// Task A: BAR — compare sales by platform per genre
-function barByGenre(year, metric) {
+// Task A: BAR — compare sales by genre
+function barByGenre(year) {
   const rows = chartData.filter(r => r.year === year);
 
   // Group genres
   const organizedByGenre = new Map()
   for (const row of rows) {
     const genre = row.genre;
-    const value = row[metric];
+    const sales = row.unitsM;
 
     if (organizedByGenre.has(genre)) {
       const currentTotal = organizedByGenre.get(genre);
-      organizedByGenre.set(genre, currentTotal + value);
+      organizedByGenre.set(genre, currentTotal + sales);
     } else {
-      organizedByGenre.set(genre, value);
+      organizedByGenre.set(genre, sales);
     }
   }
 
   // Get the genre names, get the metric values
-  // **Conver to array otherwise chart.js errors
+  // **Convert to array, otherwise chart.js throws errors
   const labels = Array.from(organizedByGenre.keys());
   const values = Array.from(organizedByGenre.values());
 
@@ -83,17 +81,17 @@ function barByGenre(year, metric) {
     data: {
       labels,
       datasets: [{
-        label: `${metric} in ${year}`,
+        label: `Units sold by genre in ${year}`,
         data: values
       }]
     },
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: `Genre comparison (${year})` }
+        title: { display: true, text: `Units sold per genre comparison (${year})` }
       },
       scales: {
-        y: { title: { display: true, text: metric } },
+        y: { title: { display: true, text: "Units sold (M)" } },
         x: { title: { display: true, text: "Genre" } }
       }
     }
@@ -101,54 +99,53 @@ function barByGenre(year, metric) {
 }
 
 // Task B: LINE — Sales over years
-function lineOverTime(region, metric) {
+function lineOverTime(region) {
   const rows = chartData.filter(r => r.region === region);
 
-  // Group genres
-  const organizedByGenre = new Map()
+  // Group occurences of sales per year (basically exact same thing in bar)
+  const groupedYears = new Map()
   for (const row of rows) {
     const year = row.year;
-    const value = row[metric];
+    const value = row.unitsM;
 
-    if (organizedByGenre.has(year)) {
-      const currentTotal = organizedByGenre.get(year);
-      organizedByGenre.set(year, currentTotal + value);
+    if (groupedYears.has(year)) {
+      const currentTotal = groupedYears.get(year);
+      groupedYears.set(year, currentTotal + value);
     } else {
-      organizedByGenre.set(year, value);
+      groupedYears.set(year, value);
     }
   }
 
-  const labels = Array.from(organizedByGenre.keys());
-  const values = Array.from(organizedByGenre.values());
+  const labels = Array.from(groupedYears.keys());
+  const values = Array.from(groupedYears.values());
 
   return {
     type: "line",
     data: {
       labels, 
       datasets: [{
-        label: `${metric} in ${region}`,
+        label: `Units sold in ${region}`,
         data: values
       }] 
     },
     options: {
       responsive: true,
       plugins: {
-        title: { display: true, text: `Trends over time: ${region}` }
+        title: { display: true, text: `Game sales over years in ${region}` }
       },
       scales: {
-        y: { title: { display: true, text: "Sales" } },
-        x: { title: { display: true, text: "year" } }
+        y: { title: { display: true, text: "Units Sold (M)" } },
+        x: { title: { display: true, text: "Year" } }
       }
     }
   };
 }
 
 // SCATTER — relationship between review score and sales
-function scatterTripsVsTemp(year) {
+function scatterReviewScoresVsSales(year) {
   const rows = chartData.filter(r => r.year === year);
 
   const points = rows.map(r => ({ x: r.reviewScore, y: r.unitsM }))
-  console.log(points);
 
   return {
     type: "scatter",
@@ -160,11 +157,11 @@ function scatterTripsVsTemp(year) {
     },
     options: {
       plugins: {
-        title: { display: true, text: `Does review score affect sales? (${year})` }
+        title: { display: true, text: `Do Review Scores Affect Sales? (${year})` }
       },
       scales: {
         x: { title: { display: true, text: "Review Score" } },
-        y: { title: { display: true, text: "Sales (M)" } }
+        y: { title: { display: true, text: "Units Sold (M)" } }
       }
     }
   };
@@ -172,48 +169,79 @@ function scatterTripsVsTemp(year) {
 
 // DOUGHNUT — region share for one year
 function doughnutRegionVsShare(year, region) {
-  const rowsOnYear = chartData.filter(r => r.year === year)
-  console.log(rowsOnYear)
+  const rowsOnYear = chartData.filter(r => r.year === year);
+  console.log(rowsOnYear);
 
-  const totalRegion = (rowsOnYear.filter(r => r.region).length)
-  const percent = ((rowsOnYear.filter(r => r.region === region).length)/totalRegion) * 100
+  const totalRegion = (rowsOnYear.filter(r => r.region).length);
 
-  const share = 100 - percent;
+  const getRegionPercentContribution = (givenRegion) => {
+    return ((rowsOnYear.filter(r => r.region === givenRegion).length)/totalRegion) * 100;
+  };
+  const NApercent = getRegionPercentContribution("NA");
+  const EUpercent = getRegionPercentContribution("EU");
+  const JPpercent = getRegionPercentContribution("JP");
+  const ASIApercent = getRegionPercentContribution("ASIA");
+
+  const accumulativePercent = NApercent + EUpercent + JPpercent + ASIApercent;
 
   return {
     type: "doughnut",
     data: {
-      labels: ["Region (%)", "Total (%)"],
-      datasets: [{ label: "Region Share", data: [percent, share] }]
+      labels: ["North America (%)", "European Union (%)", "Japan (%)", "Asia (%)"],
+      datasets: [{ label: "Region Share", data: [NApercent,EUpercent,JPpercent,ASIApercent] }]
     },
     options: {
       plugins: {
-        title: { display: true, text: `Region Share: ${percent} (${year})` }
+        title: { display: true, text: `Region Share of Game Sales (${year})` }
       }
     }
   };
 }
 
 // RADAR — compare publishers across multiple metrics for one year
-function radarCompareNeighborgenres(year) {
+function radarComparePublishers(year) {
   const rows = chartData.filter(r => r.year === year);
 
   const metrics = ["unitsM", "revenueUSD", "priceUSD", "reviewScore", "esports"];
   const labels = metrics;
 
-  const groupedPublishers = groupStatistics(rows,"publisher",metrics)
+  // Same gropuing function used for most other graphs but tweaked due to array inputs
+  const groupedByPublisher = new Map();
+  for (const row of rows) {
+    const publisher = row.publisher;
 
-  const datasets = groupedPublishers.map(r => ({
-    label: r.publisher,
-    data: metrics.map(m => r[m])
+    if (groupedByPublisher.has(publisher)) {
+      const currentData = groupedByPublisher.get(publisher);
+      const incomingData = metrics.map(m => row[m])
+      // Add the already existing data to the new data given by the next row
+      for (const index in currentData) {
+        incomingData[index] += currentData[index]
+      }
+      // Set the publisher's value to the summed data table
+      groupedByPublisher.set(publisher, incomingData);
+    } else {
+      // Data is storing the numerical values of the metrics, not giving them keys (but you can infer what is what based on the index; chart.js can, at least)
+      const data = metrics.map(m => row[m])
+      groupedByPublisher.set(publisher, data);
+    }
+  }
+
+  // Converting to array for the sake of my sanity in not rewriting the only grouping function I know how to work (if it aint broke, don't fix it...)
+  const arrayFormat = Array.from(groupedByPublisher)
+
+  const datasets = arrayFormat.map(r => ({
+    label: r[0],
+    data: r[1]
   }));
+  console.log(datasets)
+
 
   return {
     type: "radar",
     data: { labels, datasets },
     options: {
       plugins: {
-        title: { display: true, text: `Multi-metric comparison (${year})` }
+        title: { display: true, text: `Multi-metric comparison per publisher (${year})` }
       }
     }
   };
