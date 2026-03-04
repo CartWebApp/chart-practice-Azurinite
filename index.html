@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BikeShare Data Dashboard (Chart.js Lab)</title>
+  <title>GameSales Data Dashboard (Chart.js Lab)</title>
   <link rel="stylesheet" href="styles.css" />
 
   <!-- Chart.js via CDN (official docs recommend CDN options like jsDelivr) -->
@@ -12,7 +12,7 @@
 
 <body>
   <header class="container">
-    <h1>BikeShare Data Dashboard</h1>
+    <h1>GameSales Data Dashboard</h1>
     <p class="sub">
       Build charts from real-ish city data. Start with Bar + Line, then pick an extension chart.
     </p>
@@ -24,28 +24,18 @@
 
       <label class="label">Chart</label>
       <select id="chartType">
-        <option value="bar" selected>Bar (compare neighborhoods)</option>
-        <option value="line">Line (trend over time)</option>
-        <option value="scatter">Scatter (relationship)</option>
-        <option value="doughnut">Doughnut (parts of whole)</option>
-        <option value="radar">Radar (multi-metric compare)</option>
+        <option value="bar" selected>Bar (compare genres)</option>
+        <option value="line">Line (sales over years)</option>
+        <option value="scatter">Scatter (review scores vs sales)</option>
+        <option value="doughnut">Doughnut (region share)</option>
+        <option value="radar">Radar (compare publishers)</option>
       </select>
 
-      <label class="label">Month</label>
-      <select id="monthSelect"></select>
+      <label class="label">Year</label>
+      <select id="yearSelect"></select>
 
-      <label class="label">Neighborhood</label>
-      <select id="hoodSelect"></select>
-
-      <label class="label">Metric</label>
-      <select id="metricSelect">
-        <option value="trips" selected>Trips</option>
-        <option value="revenueUSD">Revenue (USD)</option>
-        <option value="avgDurationMin">Avg Duration (min)</option>
-        <option value="incidents">Incidents</option>
-        <option value="tempC">Temperature (C)</option>
-        <option value="precipMM">Precipitation (mm)</option>
-      </select>
+      <label class="label">Region</label>
+      <select id="regionSelect"></select>
 
       <button id="renderBtn">Render Chart</button>
 
